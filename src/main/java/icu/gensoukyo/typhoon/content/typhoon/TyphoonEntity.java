@@ -9,7 +9,6 @@ import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.player.Player;
-import net.minecraft.world.level.Level;
 import net.minecraft.world.level.saveddata.SavedData;
 import net.minecraft.world.level.saveddata.SavedDataType;
 import net.minecraft.world.phys.Vec3;
@@ -36,10 +35,10 @@ public class TyphoonEntity extends SavedData {
         @Override
         public void encode(ByteBuf buf, TyphoonEntity value) {
             ByteBufCodecs.DOUBLE.encode(buf, value.x);
-            ByteBufCodecs.DOUBLE.encode(buf, value.y);
+            ByteBufCodecs.DOUBLE.encode(buf, value.z);
             ByteBufCodecs.DOUBLE.encode(buf, value.v);
             ByteBufCodecs.DOUBLE.encode(buf, value.vx);
-            ByteBufCodecs.DOUBLE.encode(buf, value.vy);
+            ByteBufCodecs.DOUBLE.encode(buf, value.vz);
             ByteBufCodecs.DOUBLE.encode(buf, value.factor);
             ByteBufCodecs.DOUBLE.encode(buf, value.height);
             ByteBufCodecs.DOUBLE.encode(buf, value.miny);
@@ -52,10 +51,10 @@ public class TyphoonEntity extends SavedData {
 
     public static final Codec<TyphoonEntity> CODEC = RecordCodecBuilder.create(ins -> ins.group(
             Codec.DOUBLE.fieldOf("x").forGetter(o -> o.x),
-            Codec.DOUBLE.fieldOf("y").forGetter(o -> o.y),
+            Codec.DOUBLE.fieldOf("z").forGetter(o -> o.z),
             Codec.DOUBLE.fieldOf("v").forGetter(o -> o.v),
             Codec.DOUBLE.fieldOf("vx").forGetter(o -> o.vx),
-            Codec.DOUBLE.fieldOf("vy").forGetter(o -> o.vy),
+            Codec.DOUBLE.fieldOf("vz").forGetter(o -> o.vz),
             Codec.DOUBLE.fieldOf("factor").forGetter(o -> o.factor),
             Codec.DOUBLE.fieldOf("height").forGetter(o -> o.height),
             Codec.DOUBLE.fieldOf("miny").forGetter(o -> o.miny),
@@ -69,10 +68,10 @@ public class TyphoonEntity extends SavedData {
     );
 
 
-    private double x,y;
+    private double x, z;
 
     private final double v;
-    private double vx,vy;
+    private double vx, vz;
 
     private final double factor;
 
@@ -82,12 +81,12 @@ public class TyphoonEntity extends SavedData {
 
     private long lastTime;
 
-    public TyphoonEntity(double x, double y, double v, double vx, double vy, double factor, double height, double miny, double r) {
+    public TyphoonEntity(double x, double z, double v, double vx, double vz, double factor, double height, double miny, double r) {
         this.x = x;
-        this.y = y;
+        this.z = z;
         this.v = v;
         this.vx = vx;
-        this.vy = vy;
+        this.vz = vz;
         this.factor = factor;
         this.height = height;
         this.miny = miny;
@@ -118,17 +117,17 @@ public class TyphoonEntity extends SavedData {
 
     public void setPos(double x, double y) {
         this.x = x;
-        this.y = y;
+        this.z = y;
     }
 
     public void tick(ServerLevel level) {
         if (paused) return;
 
-        Player nearestPlayer = level.getNearestPlayer(x, 0, y, Double.MAX_VALUE, true);
+        Player nearestPlayer = level.getNearestPlayer(x, 0, z, Double.MAX_VALUE, true);
         if(nearestPlayer !=null){
-            Vec3 vec3 = new Vec3(x, 0, y).vectorTo(nearestPlayer.position()).normalize();
+            Vec3 vec3 = new Vec3(x, 0, z).vectorTo(nearestPlayer.position()).normalize();
             vx = vec3.x * factor;
-            vy = vec3.z * factor;
+            vz = vec3.z * factor;
         }
 
 
@@ -137,7 +136,7 @@ public class TyphoonEntity extends SavedData {
         double dt = (now - lastTime) / 1000.0;
 
         this.x += vx * dt;
-        this.y += vy * dt;
+        this.z += vz * dt;
 
         lastTime = now;
         this.setDirty();
@@ -186,7 +185,7 @@ public class TyphoonEntity extends SavedData {
         }
 
         double dx = pos.x - x;
-        double dz = pos.z - y;
+        double dz = pos.z - z;
 
         double dist = Math.sqrt(dx * dx + dz * dz);
 
