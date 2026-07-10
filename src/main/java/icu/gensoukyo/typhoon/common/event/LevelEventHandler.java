@@ -16,6 +16,11 @@ import net.neoforged.neoforge.server.ServerLifecycleHooks;
 public class LevelEventHandler {
     @SubscribeEvent
     public static void onLevelTickEvent(LevelTickEvent.Post event){
+
+        if (TyphoonEntity.INSTANCE == null) {
+            return;
+        }
+
         Level level = event.getLevel();
         if(level.dimension() == Level.OVERWORLD && level instanceof ServerLevel serverLevel) {
             TyphoonEntity.INSTANCE.tick(serverLevel);

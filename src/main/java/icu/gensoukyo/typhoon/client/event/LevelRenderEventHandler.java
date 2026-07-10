@@ -8,6 +8,7 @@ import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.textures.GpuTextureView;
 import com.mojang.blaze3d.vertex.PoseStack;
 import icu.gensoukyo.typhoon.Typhoon;
+import icu.gensoukyo.typhoon.client.render.TyphoonRenderer;
 import icu.gensoukyo.typhoon.content.typhoon.TyphoonEntity;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.LevelRenderer;
@@ -19,6 +20,8 @@ import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.client.event.ExtractLevelRenderStateEvent;
 import net.neoforged.neoforge.client.event.RegisterCustomEnvironmentEffectRendererEvent;
 import net.neoforged.neoforge.client.event.RenderLevelStageEvent;
+import net.neoforged.neoforge.client.event.lifecycle.ClientStartedEvent;
+import net.neoforged.neoforge.client.event.lifecycle.ClientStoppingEvent;
 import org.joml.*;
 
 import java.util.OptionalDouble;
@@ -29,7 +32,18 @@ public class LevelRenderEventHandler {
 
     @SubscribeEvent
     public static void onRenderAfterSky(RenderLevelStageEvent.AfterSky event){
-        PoseStack poseStack = event.getPoseStack();
+        Matrix4fStack modelViewStack = RenderSystem.getModelViewStack();
+
+        final TyphoonEntity entity = TyphoonEntity.INSTANCE;
+        // todo: remove "|| true" when the typhoon is ready
+        if (entity != null || true) {
+            TyphoonRenderer.getInstance().render(
+                    new PoseStack(),
+                    modelViewStack,
+                    entity
+            );
+        }
+
 //        Matrix4fStack modelViewStack = RenderSystem.getModelViewStack();
 //        modelViewStack.pushMatrix();
 //        modelViewStack.mul(poseStack.last().pose());
@@ -51,5 +65,19 @@ public class LevelRenderEventHandler {
 //        }
 
 //        modelViewStack.popMatrix();
+    }
+
+    @SubscribeEvent
+    public static void onClientStarted(final ClientStartedEvent event) {
+
+        TyphoonRenderer.init(event.getClient());
+
+    }
+
+    @SubscribeEvent
+    public static void onStoppingClient(final ClientStoppingEvent event) {
+
+        TyphoonRenderer.cleanup();
+
     }
 }
