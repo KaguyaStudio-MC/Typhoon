@@ -19,7 +19,7 @@ public class TYPCommand {
                 Commands.literal(Typhoon.MODID).then(
                         Commands.literal("create").executes(
                                 context -> {
-                                    if (TyphoonEntity.INSTANCE !=null){
+                                    if (TyphoonEntity.INSTANCE ==null){
                                         MinecraftServer currentServer = ServerLifecycleHooks.getCurrentServer();
                                         SavedDataStorage dataStorage;
                                         if (currentServer != null) {
@@ -29,7 +29,7 @@ public class TYPCommand {
                                                     ,CommonConfig.FACTOR.get()
                                                     ,CommonConfig.HEIGHT.get()
                                                     ,CommonConfig.MINY.get()
-                                                    ,CommonConfig.R.get());
+                                                    ,CommonConfig.R.get(),true);
 
                                             dataStorage.set(TyphoonEntity.ID,TyphoonEntity.INSTANCE);
                                         }

@@ -1,5 +1,7 @@
 {
-  "itemGroup.typhoon": "Example Mod Tab",
-  "block.typhoon.example_block": "Example Block",
-  "item.typhoon.example_item": "Example Item"
+  "typhoon.configuration.typhoon_velocity": "Typhoon Velocity",
+  "typhoon.configuration.typhoon_miny": "Typhoon Minimum Y",
+  "typhoon.configuration.typhoon_factor": "Typhoon Factor",
+  "typhoon.configuration.typhoon_height": "Typhoon Height",
+  "typhoon.configuration.typhoon_radius": "Typhoon Radius"
 }

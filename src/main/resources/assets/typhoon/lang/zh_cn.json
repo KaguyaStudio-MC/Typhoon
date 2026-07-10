@@ -1,0 +1,7 @@
+{
+  "typhoon.configuration.typhoon_velocity": "台风移动速度",
+  "typhoon.configuration.typhoon_miny": "台风最低影响Y",
+  "typhoon.configuration.typhoon_factor": "台风力量",
+  "typhoon.configuration.typhoon_height": "台风高度",
+  "typhoon.configuration.typhoon_radius": "台风范围"
+}

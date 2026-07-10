@@ -14,9 +14,9 @@ public class CommonConfig {
 
     public static final ModConfigSpec.DoubleValue V = BUILDER.defineInRange("typhoon_velocity", 5.0, 0, 100.0);
 
-    public static final ModConfigSpec.DoubleValue HEIGHT = BUILDER.defineInRange("typhoon_height", 200.0, 0, 1000.0);
+    public static final ModConfigSpec.DoubleValue HEIGHT = BUILDER.defineInRange("typhoon_height", 400.0, 0, 3000.0);
 
-    public static final ModConfigSpec.DoubleValue MINY = BUILDER.defineInRange("typhoon_miny", 50.0, -64, 128.0);
+    public static final ModConfigSpec.DoubleValue MINY = BUILDER.defineInRange("typhoon_miny", 0, -64, 128.0);
 
     public static final ModConfigSpec.DoubleValue R = BUILDER.defineInRange("typhoon_radius", 2000.0, 0, 100000.0);
 

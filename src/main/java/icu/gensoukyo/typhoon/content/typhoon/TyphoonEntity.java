@@ -3,15 +3,19 @@ package icu.gensoukyo.typhoon.content.typhoon;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import icu.gensoukyo.typhoon.Typhoon;
+import icu.gensoukyo.typhoon.common.network.TyphoonSyncMessage;
 import io.netty.buffer.ByteBuf;
+import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.network.codec.ByteBufCodecs;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.level.Level;
 import net.minecraft.world.level.saveddata.SavedData;
 import net.minecraft.world.level.saveddata.SavedDataType;
 import net.minecraft.world.phys.Vec3;
+import net.neoforged.neoforge.network.PacketDistributor;
 
 public class TyphoonEntity extends SavedData {
 
@@ -29,7 +33,8 @@ public class TyphoonEntity extends SavedData {
             double height = ByteBufCodecs.DOUBLE.decode(buf);
             double miny = ByteBufCodecs.DOUBLE.decode(buf);
             double r = ByteBufCodecs.DOUBLE.decode(buf);
-            return new TyphoonEntity(x, y,v, vx, vy, factor, height, miny, r);
+            boolean paused = ByteBufCodecs.BOOL.decode(buf);
+            return new TyphoonEntity(x, y,v, vx, vy, factor, height, miny, r, paused);
         }
 
         @Override
@@ -43,7 +48,7 @@ public class TyphoonEntity extends SavedData {
             ByteBufCodecs.DOUBLE.encode(buf, value.height);
             ByteBufCodecs.DOUBLE.encode(buf, value.miny);
             ByteBufCodecs.DOUBLE.encode(buf, value.r);
-            ByteBufCodecs.VAR_LONG.encode(buf, value.lastTime);
+            ByteBufCodecs.BOOL.encode(buf, value.paused);
         }
     };
 
@@ -58,7 +63,8 @@ public class TyphoonEntity extends SavedData {
             Codec.DOUBLE.fieldOf("factor").forGetter(o -> o.factor),
             Codec.DOUBLE.fieldOf("height").forGetter(o -> o.height),
             Codec.DOUBLE.fieldOf("miny").forGetter(o -> o.miny),
-            Codec.DOUBLE.fieldOf("r").forGetter(o -> o.r)
+            Codec.DOUBLE.fieldOf("r").forGetter(o -> o.r),
+            Codec.BOOL.fieldOf("paused").forGetter(o -> o.paused)
     ).apply(ins, TyphoonEntity::new));
 
     public static final SavedDataType<TyphoonEntity> ID = new SavedDataType<>(
@@ -68,20 +74,20 @@ public class TyphoonEntity extends SavedData {
     );
 
 
-    private double x, z;
+    public double x, z;
 
     private final double v;
     private double vx, vz;
 
     private final double factor;
 
-    private final double height,miny;
+    public final double height,miny;
 
-    private final double r;
+    public final double r;
 
     private long lastTime;
 
-    public TyphoonEntity(double x, double z, double v, double vx, double vz, double factor, double height, double miny, double r) {
+    public TyphoonEntity(double x, double z, double v, double vx, double vz, double factor, double height, double miny, double r,boolean paused) {
         this.x = x;
         this.z = z;
         this.v = v;
@@ -92,17 +98,17 @@ public class TyphoonEntity extends SavedData {
         this.miny = miny;
         this.r = r;
         this.lastTime = System.currentTimeMillis();
-        this.paused = true;
+        this.paused = paused;
     }
 
-    public TyphoonEntity(double v, double factor, double height, double miny, double r) {
+    public TyphoonEntity(double v, double factor, double height, double miny, double r,boolean paused) {
         this.v = v;
         this.factor = factor;
         this.height = height;
         this.miny = miny;
         this.r = r;
         this.lastTime = System.currentTimeMillis();
-        this.paused = true;
+        this.paused = paused;
     }
 
     public TyphoonEntity() {
@@ -120,7 +126,7 @@ public class TyphoonEntity extends SavedData {
         this.z = y;
     }
 
-    public void tick(ServerLevel level) {
+    public void tick(Level level) {
         if (paused) return;
 
         Player nearestPlayer = level.getNearestPlayer(x, 0, z, Double.MAX_VALUE, true);
@@ -140,8 +146,14 @@ public class TyphoonEntity extends SavedData {
 
         lastTime = now;
         this.setDirty();
-
-        Iterable<Entity> allEntities = level.getAllEntities();
+        Iterable<Entity> allEntities = null;
+        if(level instanceof ServerLevel serverLevel) {
+            allEntities = serverLevel.getAllEntities();
+        }
+        if(level instanceof ClientLevel clientLevel) {
+            allEntities = clientLevel.entitiesForRendering();
+        }
+        if(allEntities==null)return;
 
         allEntities.forEach(entity -> {
 
@@ -159,8 +171,14 @@ public class TyphoonEntity extends SavedData {
 
             double resistance = 1.0;
 
-            if(entity instanceof Player)
+            if (entity instanceof Player player) {
                 resistance = 0.5;
+                if (!player.gameMode().isSurvival()) {
+                    return;
+                }
+            }
+
+
 
             wind = wind.scale(resistance);
 
@@ -174,8 +192,15 @@ public class TyphoonEntity extends SavedData {
 
             entity.setDeltaMovement(velocity);
         });
-    }
 
+        if(level instanceof ServerLevel) {
+            PacketDistributor.sendToAllPlayers(new TyphoonSyncMessage(this));
+        }
+    }
+    static double smoothstep(double edge0, double edge1, double x) {
+        x = Math.clamp((x - edge0) / (edge1 - edge0), 0.0, 1.0);
+        return x * x * (3.0 - 2.0 * x);
+    }
     public Vec3 getFactorAtPos(Vec3 pos) {
         if(paused) return Vec3.ZERO;
 
@@ -190,7 +215,7 @@ public class TyphoonEntity extends SavedData {
         double dist = Math.sqrt(dx * dx + dz * dz);
 
         // 超出影响范围
-        if (dist >= r || dist < 1e-6) {
+        if (dist >= r*2 || dist < 1e-6) {
             return Vec3.ZERO;
         }
 
@@ -198,7 +223,8 @@ public class TyphoonEntity extends SavedData {
         // 高度衰减
         // ===========================
 
-        double hFactor = Math.min(1.0, (pos.y - miny) / height);
+        double t2 = Math.clamp((pos.y - miny) / height, 0.0, 1.0);
+        double hFactor = smoothstep(0.0, 0.5, t2) * (1.0 - smoothstep(0.5, 1.0, t2));
 
         // ===========================
         // 单位向量
@@ -241,7 +267,7 @@ public class TyphoonEntity extends SavedData {
         double fx = tx * rotate + rx * inflow;
         double fz = tz * rotate + rz * inflow;
 
-        double fy = strength * 0.35;
+        double fy = strength * hFactor * 2;
 
         // ===========================
         // 阵风
@@ -292,12 +318,17 @@ public class TyphoonEntity extends SavedData {
         // 总倍率
         // ===========================
 
-        double scale = factor * hFactor;
+        double scale = factor * hFactor * 1e4;
 
-        return new Vec3(
+        Vec3 vec3 = new Vec3(
                 fx * scale,
                 fy * scale,
                 fz * scale
         );
+
+        if (vec3.distanceToSqr(Vec3.ZERO)>10*10){
+            vec3 = vec3.normalize().multiply(10, 10, 10);
+        }
+        return vec3;
     }
 }

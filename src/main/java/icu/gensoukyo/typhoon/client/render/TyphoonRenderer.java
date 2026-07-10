@@ -13,12 +13,10 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.texture.AbstractTexture;
 import net.minecraft.client.renderer.texture.TextureManager;
 import net.minecraft.resources.Identifier;
-import org.joml.Matrix4f;
-import org.joml.Matrix4fStack;
-import org.joml.Vector3f;
-import org.joml.Vector4f;
+import org.joml.*;
 
 import javax.annotation.ParametersAreNonnullByDefault;
+import java.lang.Math;
 import java.util.OptionalDouble;
 import java.util.OptionalInt;
 
@@ -73,16 +71,19 @@ public final class TyphoonRenderer implements AutoCloseable {
         final var offset                    = camera.position();
 
         // todo: get position from the typhoon
-        final float tx                      = 0.0f;
-        final float ty                      = 255.0f;
-        final float tz                      = 0.0f;
+        final float tx                      = (float) entity.x;
+        final float ty                      = (float) entity.height;
+        final float tz                      = (float) entity.z;
 
         final float x                       = tx - (float) offset.x;
         final float y                       = ty - (float) offset.y;
         final float z                       = tz - (float) offset.z;
 
+        long millis = System.currentTimeMillis();
+
         poseStack.translate(x, y, z);
-        poseStack.scale(256.0f, 256.0f, 256.0f);
+        poseStack.mulPose(new Quaternionf().rotateY((float) (((float) (millis % 1000000) /100000)%2 * 2* Math.PI)));
+        poseStack.scale((float) entity.r/2, 256.0f, (float) entity.r/2);
 
         modelViewStack                      .pushMatrix();
         modelViewStack                      .mul(poseStack.last().pose());

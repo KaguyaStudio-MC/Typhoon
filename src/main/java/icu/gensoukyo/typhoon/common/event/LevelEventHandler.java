@@ -22,8 +22,8 @@ public class LevelEventHandler {
         }
 
         Level level = event.getLevel();
-        if(level.dimension() == Level.OVERWORLD && level instanceof ServerLevel serverLevel) {
-            TyphoonEntity.INSTANCE.tick(serverLevel);
+        if(level.dimension() == Level.OVERWORLD) {
+            TyphoonEntity.INSTANCE.tick(level);
         }
     }
 
