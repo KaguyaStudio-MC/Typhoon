@@ -18,6 +18,9 @@ base {
 
 java.toolchain.languageVersion = JavaLanguageVersion.of(25)
 
+def rdcDyLibPath = file("libs/renderdoc.dll").absolutePath
+def rdcLoaderPath = file("libs/render-nurse-0.0.14.jar").absolutePath
+
 neoForge {
     // Specify the version of NeoForge to use.
     version = project.neo_version
@@ -38,6 +41,17 @@ neoForge {
 
             // Comma-separated list of namespaces to load gametests from. Empty = all namespaces.
             systemProperty 'neoforge.enabledGameTestNamespaces', project.mod_id
+            gameDirectory = this.mkdir(this.file('runs/client'))
+        }
+
+        renderDocClient {
+            client()
+
+            systemProperty 'neoforge.enabledGameTestNamespaces', project.mod_id
+            systemProperty("neoforge.rendernurse.renderdoc.library", rdcDyLibPath)
+            jvmArgument("-javaagent:" + rdcLoaderPath)
+            jvmArgument("--enable-preview")
+            jvmArgument("--enable-native-access=ALL-UNNAMED")
             gameDirectory = this.mkdir(this.file('runs/client'))
         }
 
