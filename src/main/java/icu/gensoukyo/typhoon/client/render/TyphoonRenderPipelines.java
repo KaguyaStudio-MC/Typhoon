@@ -1,4 +1,4 @@
-package icu.gensoukyo.typhoon.client;
+package icu.gensoukyo.typhoon.client.render;
 
 import com.mojang.blaze3d.pipeline.BlendFunction;
 import com.mojang.blaze3d.pipeline.ColorTargetState;

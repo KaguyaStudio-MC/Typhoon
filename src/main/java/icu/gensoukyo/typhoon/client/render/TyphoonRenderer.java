@@ -8,7 +8,6 @@ import com.mojang.blaze3d.textures.GpuTextureView;
 import com.mojang.blaze3d.vertex.*;
 import com.mojang.logging.annotations.MethodsReturnNonnullByDefault;
 import icu.gensoukyo.typhoon.Typhoon;
-import icu.gensoukyo.typhoon.client.TyphoonRenderPipelines;
 import icu.gensoukyo.typhoon.content.typhoon.TyphoonEntity;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.texture.AbstractTexture;
