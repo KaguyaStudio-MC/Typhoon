@@ -33,7 +33,8 @@ public class TYPCommand {
                                                     ,CommonConfig.R.get(),true
                                                     ,CommonConfig.H_FACTOR.get()
                                                     ,CommonConfig.GROW.get()
-                                                    ,CommonConfig.MAX_GROWN.get());
+                                                    ,CommonConfig.MAX_GROWN.get()
+                                                    ,CommonConfig.BASE.get());
 
                                             dataStorage.set(TyphoonEntity.ID,TyphoonEntity.INSTANCE);
                                         }

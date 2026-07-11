@@ -6,9 +6,12 @@ import icu.gensoukyo.typhoon.Typhoon;
 import icu.gensoukyo.typhoon.common.network.TyphoonSyncMessage;
 import io.netty.buffer.ByteBuf;
 import net.minecraft.client.multiplayer.ClientLevel;
+import net.minecraft.core.UUIDUtil;
+import net.minecraft.network.chat.Component;
 import net.minecraft.network.codec.ByteBufCodecs;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.players.PlayerList;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
@@ -17,8 +20,22 @@ import net.minecraft.world.level.saveddata.SavedData;
 import net.minecraft.world.level.saveddata.SavedDataType;
 import net.minecraft.world.phys.Vec3;
 import net.neoforged.neoforge.network.PacketDistributor;
+import net.neoforged.neoforge.server.ServerLifecycleHooks;
+
+import java.util.List;
+import java.util.UUID;
 
 public class TyphoonEntity extends SavedData {
+
+
+    public static final Codec<TyphoonEntity> CODEC = RecordCodecBuilder.create(ins -> ins.group(
+            Codec.BOOL.fieldOf("paused").forGetter(o -> o.paused),
+            Codec.DOUBLE.listOf().fieldOf("list").forGetter(o -> List.of(o.x,o.z,o.r,o.v,o.damage,o.vx,o.vz,o.factor,o.hFactor,o.miny,o.growSpeed,o.maxGrownFactor,o.grownFactor,o.baseGrownFactor,o.height)),
+            Codec.LONG.fieldOf("lastTime").forGetter(o -> o.lastTime),
+            Codec.LONG.fieldOf("lastHurtTime").forGetter(o -> o.lastHurtTime),
+            UUIDUtil.CODEC.fieldOf("lockedUUID").forGetter(o -> o.lockedUUID),
+            Codec.LONG.fieldOf("lastLockedTime").forGetter(o -> o.lastLockedTime)
+    ).apply(ins, TyphoonEntity::new));
 
     public boolean paused;
 
@@ -39,7 +56,13 @@ public class TyphoonEntity extends SavedData {
             double hFactor = ByteBufCodecs.DOUBLE.decode(buf);
             double growSpeed = ByteBufCodecs.DOUBLE.decode(buf);
             double maxGrownFactor = ByteBufCodecs.DOUBLE.decode(buf);
-            return new TyphoonEntity(x, z,v, vx, vz,damage, factor, height, miny, r, paused, hFactor, growSpeed, maxGrownFactor);
+            double baseGrownFactor = ByteBufCodecs.DOUBLE.decode(buf);
+            double grownFactor = ByteBufCodecs.DOUBLE.decode(buf);
+            long lastTime = ByteBufCodecs.LONG.decode(buf);
+            long lastHurtTime = ByteBufCodecs.LONG.decode(buf);
+            long lastLockedTime = ByteBufCodecs.LONG.decode(buf);
+            UUID lockedUUID = UUIDUtil.STREAM_CODEC.decode(buf);
+            return new TyphoonEntity(x, z, v, vx, vz, damage, factor, height, miny, r, paused, hFactor, growSpeed, maxGrownFactor, grownFactor, baseGrownFactor, lastTime, lastHurtTime, lockedUUID, lastLockedTime);
         }
 
         @Override
@@ -58,27 +81,17 @@ public class TyphoonEntity extends SavedData {
             ByteBufCodecs.DOUBLE.encode(buf, value.hFactor);
             ByteBufCodecs.DOUBLE.encode(buf, value.growSpeed);
             ByteBufCodecs.DOUBLE.encode(buf, value.maxGrownFactor);
+            ByteBufCodecs.DOUBLE.encode(buf, value.baseGrownFactor);
+            ByteBufCodecs.DOUBLE.encode(buf, value.grownFactor);
+            ByteBufCodecs.LONG.encode(buf, value.lastTime);
+            ByteBufCodecs.LONG.encode(buf, value.lastHurtTime);
+            ByteBufCodecs.LONG.encode(buf, value.lastLockedTime);
+            UUIDUtil.STREAM_CODEC.encode(buf,value.lockedUUID);
         }
     };
 
     public static TyphoonEntity INSTANCE;
 
-    public static final Codec<TyphoonEntity> CODEC = RecordCodecBuilder.create(ins -> ins.group(
-            Codec.DOUBLE.fieldOf("x").forGetter(o -> o.x),
-            Codec.DOUBLE.fieldOf("z").forGetter(o -> o.z),
-            Codec.DOUBLE.fieldOf("v").forGetter(o -> o.v),
-            Codec.DOUBLE.fieldOf("vx").forGetter(o -> o.vx),
-            Codec.DOUBLE.fieldOf("vz").forGetter(o -> o.vz),
-            Codec.DOUBLE.fieldOf("damage").forGetter(o -> o.damage),
-            Codec.DOUBLE.fieldOf("factor").forGetter(o -> o.factor),
-            Codec.DOUBLE.fieldOf("height").forGetter(o -> o.height),
-            Codec.DOUBLE.fieldOf("miny").forGetter(o -> o.miny),
-            Codec.DOUBLE.fieldOf("r").forGetter(o -> o.r),
-            Codec.BOOL.fieldOf("paused").forGetter(o -> o.paused),
-            Codec.DOUBLE.fieldOf("hFactor").forGetter(o -> o.hFactor),
-            Codec.DOUBLE.fieldOf("growSpeed").forGetter(o -> o.growSpeed),
-            Codec.DOUBLE.fieldOf("maxGrownFactor").forGetter(o -> o.maxGrownFactor)
-    ).apply(ins, TyphoonEntity::new));
 
     public static final SavedDataType<TyphoonEntity> ID = new SavedDataType<>(
             Typhoon.id("typhoon"),
@@ -89,22 +102,25 @@ public class TyphoonEntity extends SavedData {
 
     public double x, z;
 
-    private final double v;
-    private double vx, vz;
+    public final double v;
+    public double vx, vz;
 
-    private final double damage;
-    private final double factor,hFactor;
-    private final double growSpeed, maxGrownFactor;
-    private double grownFactor;
+    public final double damage;
+    public final double factor, hFactor;
+    public final double growSpeed, maxGrownFactor, baseGrownFactor;
+    public double grownFactor;
 
-    public final double height,miny;
+    public final double height, miny;
 
     public final double r;
 
     private long lastTime;
     private long lastHurtTime;
 
-    public TyphoonEntity(double x, double z, double v, double vx, double vz, double damage, double factor, double height, double miny, double r, boolean paused, double hFactor, double growSpeed, double maxGrownFactor) {
+    public UUID lockedUUID;
+    public long lastLockedTime;
+
+    public TyphoonEntity(double x, double z, double v, double vx, double vz, double damage, double factor, double height, double miny, double r, boolean paused, double hFactor, double growSpeed, double maxGrownFactor, double grownFactor, double baseGrownFactor,long lastTime, long lastHurtTime, UUID lockedUUID, long lastLockedTime) {
         this.x = x;
         this.z = z;
         this.v = v;
@@ -118,13 +134,16 @@ public class TyphoonEntity extends SavedData {
         this.hFactor = hFactor;
         this.growSpeed = growSpeed;
         this.maxGrownFactor = maxGrownFactor;
-        this.lastTime = System.currentTimeMillis();
-        this.lastHurtTime = System.currentTimeMillis();
         this.paused = paused;
-        this.grownFactor = 0;
+        this.grownFactor = grownFactor;
+        this.baseGrownFactor = baseGrownFactor;
+        this.lastTime = lastTime;
+        this.lastHurtTime = lastHurtTime;
+        this.lockedUUID = lockedUUID;
+        this.lastLockedTime = lastLockedTime;
     }
 
-    public TyphoonEntity(double v, double damage, double factor, double height, double miny, double r, boolean paused, double hFactor, double growSpeed, double maxGrownFactor) {
+    public TyphoonEntity(double v, double damage, double factor, double height, double miny, double r, boolean paused, double hFactor, double growSpeed, double maxGrownFactor, double baseGrownFactor) {
         this.v = v;
         this.damage = damage;
         this.factor = factor;
@@ -137,7 +156,9 @@ public class TyphoonEntity extends SavedData {
         this.lastTime = System.currentTimeMillis();
         this.lastHurtTime = System.currentTimeMillis();
         this.paused = paused;
-        this.grownFactor = 0;
+        this.grownFactor = baseGrownFactor;
+        this.baseGrownFactor = baseGrownFactor;
+        this.lockedUUID = UUID.randomUUID();
     }
 
     public TyphoonEntity() {
@@ -149,11 +170,34 @@ public class TyphoonEntity extends SavedData {
         this.v = 0;
         this.hFactor = 0;
         this.lastTime = System.currentTimeMillis();
-        this.lastHurtTime = System.currentTimeMillis();
         this.growSpeed = 0;
         this.maxGrownFactor = 0;
         this.paused = true;
         this.grownFactor = 0;
+        this.baseGrownFactor = 0;
+    }
+
+    public TyphoonEntity(boolean paused,List<Double> doubles,long lastTime, long lastHurtTime, UUID lockedUUID, long lastLockedTime) {
+        this.x = doubles.get(0);
+        this.z = doubles.get(1);
+        this.r = doubles.get(2);
+        this.v = doubles.get(3);
+        this.damage = doubles.get(4);
+        this.vx = doubles.get(5);
+        this.vz = doubles.get(6);
+        this.factor = doubles.get(7);
+        this.hFactor = doubles.get(8);
+        this.miny = doubles.get(9);
+        this.growSpeed = doubles.get(10);
+        this.maxGrownFactor = doubles.get(11);
+        this.grownFactor = doubles.get(12);
+        this.baseGrownFactor = doubles.get(13);
+        this.height = doubles.get(14);
+        this.paused = paused;
+        this.lastTime = lastTime;
+        this.lastHurtTime = lastHurtTime;
+        this.lockedUUID = lockedUUID;
+        this.lastLockedTime = lastLockedTime;
     }
 
     public void setPos(double x, double y) {
@@ -162,17 +206,46 @@ public class TyphoonEntity extends SavedData {
     }
 
     public void tick(Level level) {
+        if (lastTime == 0) lastTime = System.currentTimeMillis();
         if (paused) return;
 
-        Player nearestPlayer = level.getNearestPlayer(x, 0, z, Double.MAX_VALUE, true);
-        if(nearestPlayer !=null){
-            Vec3 vec3 = new Vec3(x, 0, z).vectorTo(nearestPlayer.position()).normalize();
-            vx = vec3.x * v;
-            vz = vec3.z * v;
+        long now = System.currentTimeMillis();
+
+        Player locked;
+
+        if(now-lastLockedTime>60000) {
+            locked = level.getNearestPlayer(x, 0, z, Double.MAX_VALUE, (e) -> {
+                if(e instanceof Player player){
+                    if (!player.gameMode().isSurvival()) {
+                        return false;
+                    }
+                    if (player.position().distanceTo(new Vec3(x,100,z))<0.2*r){
+                        return false;
+                    }
+                    return true;
+                }
+                return false;
+            });
+            if (locked != null) {
+                lockedUUID = locked.getUUID();
+                lastLockedTime= now;
+
+                try{
+                    PlayerList playerList = ServerLifecycleHooks.getCurrentServer().getPlayerList();
+                    playerList.broadcastSystemMessage(Component.literal("巴威锁定了 [").append(locked.getDisplayName()).append(Component.literal("] ！")), false);
+                }catch (Exception _){
+                }
+            }
+        }else{
+            locked=level.getPlayerByUUID(lockedUUID);
+        }
+        if (locked != null) {
+            Vec3 vec3 = new Vec3(x, locked.position().y, z).vectorTo(locked.position()).normalize();
+            vx = vec3.x * v * grownFactor;
+            vz = vec3.z * v * grownFactor;
         }
 
 
-        long now = System.currentTimeMillis();
 
         double dt = (now - lastTime) / 1000.0;
 
@@ -182,25 +255,25 @@ public class TyphoonEntity extends SavedData {
         lastTime = now;
         this.setDirty();
         Iterable<Entity> allEntities = null;
-        if(level instanceof ServerLevel serverLevel) {
+        if (level instanceof ServerLevel serverLevel) {
             allEntities = serverLevel.getAllEntities();
         }
-        if(level instanceof ClientLevel clientLevel) {
+        if (level instanceof ClientLevel clientLevel) {
             allEntities = clientLevel.entitiesForRendering();
         }
-        if(allEntities==null)return;
+        if (allEntities == null) return;
 
         allEntities.forEach(entity -> {
 
             Vec3 wind = getFactorAtPos(entity.position());
 
-            if(entity instanceof Player player
+            if (entity instanceof Player player
                     && player.isShiftKeyDown()) {
 
                 wind = new Vec3(
-                        wind.x * 0.3,
-                        wind.y * 0.1,
-                        wind.z * 0.3
+                        wind.x * 0.9,
+                        wind.y * 0.6,
+                        wind.z * 0.9
                 );
             }
 
@@ -212,7 +285,6 @@ public class TyphoonEntity extends SavedData {
                     return;
                 }
             }
-
 
 
             wind = wind.scale(resistance);
@@ -228,28 +300,32 @@ public class TyphoonEntity extends SavedData {
             entity.setDeltaMovement(velocity);
 
             double s = velocity.distanceTo(Vec3.ZERO);
-            if (s >5 && this.lastHurtTime + 2000 < now) {
-                if(entity instanceof LivingEntity entity1 && level instanceof ServerLevel serverLevel){
-                    entity1.hurtServer(serverLevel, serverLevel.damageSources().windCharge(entity1,null), (float) ((s/5) * damage));
+            if (s > 2 && this.lastHurtTime + 2000 < now) {
+                if (entity instanceof LivingEntity entity1) {
+                    entity1.hurt(level.damageSources().windCharge(entity1, null), (float) ((s / 2) * damage));
                     this.lastHurtTime = now;
                 }
             }
         });
 
-        if(grownFactor<maxGrownFactor){
-            grownFactor+=growSpeed;
+        if (grownFactor < maxGrownFactor) {
+            grownFactor += growSpeed;
+        } else {
+            grownFactor = maxGrownFactor;
         }
 
-        if(level instanceof ServerLevel) {
+        if (level instanceof ServerLevel) {
             PacketDistributor.sendToAllPlayers(new TyphoonSyncMessage(this));
         }
     }
+
     static double smoothstep(double edge0, double edge1, double x) {
         x = Math.clamp((x - edge0) / (edge1 - edge0), 0.0, 1.0);
         return x * x * (3.0 - 2.0 * x);
     }
+
     public Vec3 getFactorAtPos(Vec3 pos) {
-        if(paused) return Vec3.ZERO;
+        if (paused) return Vec3.ZERO;
 
         // 低于作用高度没有风
         if (pos.y <= miny) {
@@ -262,7 +338,7 @@ public class TyphoonEntity extends SavedData {
         double dist = Math.sqrt(dx * dx + dz * dz);
 
         // 超出影响范围
-        if (dist >= r*2 || dist < 1e-6) {
+        if (dist >= r * 2 || dist < 1e-6) {
             return Vec3.ZERO;
         }
 
@@ -373,7 +449,7 @@ public class TyphoonEntity extends SavedData {
                 fz * scale
         );
 
-        if (vec3.distanceTo(Vec3.ZERO)>20){
+        if (vec3.distanceTo(Vec3.ZERO) > 20) {
             vec3 = vec3.normalize().scale(20);
         }
         return vec3;

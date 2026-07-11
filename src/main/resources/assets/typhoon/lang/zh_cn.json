@@ -7,5 +7,7 @@
   "typhoon.configuration.typhoon_h_factor": "台风升力力量",
   "typhoon.configuration.typhoon_grow_speed": "台风生长速度",
   "typhoon.configuration.typhoon_damage_factor": "台风伤害系数",
-  "typhoon.configuration.typhoon_max_grown": "台风最大生长系数"
+  "typhoon.configuration.typhoon_max_grown": "台风最大生长系数",
+  "typhoon.configuration.typhoon_base_grown": "台风初始生长系数",
+  "typhoon.configuration.debug": "调试界面"
 }

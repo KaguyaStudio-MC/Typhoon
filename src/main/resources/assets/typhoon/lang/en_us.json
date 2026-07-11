@@ -7,5 +7,7 @@
   "typhoon.configuration.typhoon_h_factor": "Typhoon Height Factor",
   "typhoon.configuration.typhoon_grow_speed": "Typhoon Grow Speed",
   "typhoon.configuration.typhoon_damage_factor": "Typhoon Damage Factor",
-  "typhoon.configuration.typhoon_max_grown": "Typhoon Max Grown Factor"
+  "typhoon.configuration.typhoon_max_grown": "Typhoon Max Grown Factor",
+  "typhoon.configuration.typhoon_base_grown": "Typhoon Base Grown Factor",
+  "typhoon.configuration.debug": "Debug hud"
 }

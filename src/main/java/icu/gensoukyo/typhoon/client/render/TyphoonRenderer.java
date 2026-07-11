@@ -121,7 +121,7 @@ public final class TyphoonRenderer implements AutoCloseable {
                             );
             renderPass      .setVertexBuffer(0, this.typhoonBuffer);
             renderPass      .setIndexBuffer(indexBuffer, this.quadIndices.type());
-            renderPass      .drawIndexed(0, 0, 6, 1);
+            renderPass      .drawIndexed(0, 0, 12, 1);
         }
 
         modelViewStack.popMatrix();
@@ -133,12 +133,17 @@ public final class TyphoonRenderer implements AutoCloseable {
         VertexFormat format = DefaultVertexFormat.POSITION_TEX;
 
         GpuBuffer buffer;
-        try (ByteBufferBuilder byteBufferBuilder = ByteBufferBuilder.exactlySized(4 * format.getVertexSize())) {
+        try (ByteBufferBuilder byteBufferBuilder = ByteBufferBuilder.exactlySized(4 * format.getVertexSize()*2)) {
             BufferBuilder bufferBuilder = new BufferBuilder(byteBufferBuilder, VertexFormat.Mode.QUADS, format);
             bufferBuilder.addVertex(-1.0F, 0.0F, -1.0F).setUv(0.0f, 0.0f);
             bufferBuilder.addVertex(1.0F, 0.0F, -1.0F).setUv(1.0f, 0.0f);
             bufferBuilder.addVertex(1.0F, 0.0F, 1.0F).setUv(1.0f, 1.0f);
             bufferBuilder.addVertex(-1.0F, 0.0F, 1.0F).setUv(0.0f, 1.0f);
+
+            bufferBuilder.addVertex(-1.0F, 0.0F,  1.0F).setUv(0.0f, 1.0f);
+            bufferBuilder.addVertex( 1.0F, 0.0F,  1.0F).setUv(1.0f, 1.0f);
+            bufferBuilder.addVertex( 1.0F, 0.0F, -1.0F).setUv(1.0f, 0.0f);
+            bufferBuilder.addVertex(-1.0F, 0.0F, -1.0F).setUv(0.0f, 0.0f);
 
             try (MeshData mesh = bufferBuilder.buildOrThrow()) {
                 buffer = RenderSystem.getDevice().createBuffer(() -> "Typhoon", 32, mesh.vertexBuffer());
