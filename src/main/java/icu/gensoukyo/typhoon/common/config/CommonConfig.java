@@ -12,6 +12,8 @@ public class CommonConfig {
 
     public static final ModConfigSpec.DoubleValue FACTOR = BUILDER.defineInRange("typhoon_factor", 1.0, 0, 100.0);
 
+    public static final ModConfigSpec.DoubleValue H_FACTOR = BUILDER.defineInRange("typhoon_h_factor", 1.0, 0, 100.0);
+
     public static final ModConfigSpec.DoubleValue V = BUILDER.defineInRange("typhoon_velocity", 5.0, 0, 100.0);
 
     public static final ModConfigSpec.DoubleValue HEIGHT = BUILDER.defineInRange("typhoon_height", 400.0, 0, 3000.0);
@@ -19,6 +21,12 @@ public class CommonConfig {
     public static final ModConfigSpec.DoubleValue MINY = BUILDER.defineInRange("typhoon_miny", 0, -64, 128.0);
 
     public static final ModConfigSpec.DoubleValue R = BUILDER.defineInRange("typhoon_radius", 2000.0, 0, 100000.0);
+
+    public static final ModConfigSpec.DoubleValue GROW = BUILDER.defineInRange("typhoon_grow_speed", 0.0, 0, 1.0);
+
+    public static final ModConfigSpec.DoubleValue MAX_GROWN = BUILDER.defineInRange("typhoon_max_grown", 1, 0, 100.0);
+
+    public static final ModConfigSpec.DoubleValue DAMAGE = BUILDER.defineInRange("typhoon_damage_factor", 1.0, 0, 100.0);
 
     public static final ModConfigSpec SPEC = BUILDER.build();
 

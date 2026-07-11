@@ -17,7 +17,7 @@ import org.joml.Matrix4fStack;
 public class LevelRenderEventHandler {
 
     @SubscribeEvent
-    public static void onRenderAfterSky(RenderLevelStageEvent.AfterWeather event){
+    public static void onRenderAfterSky(RenderLevelStageEvent.AfterSky event){
         Matrix4fStack modelViewStack = RenderSystem.getModelViewStack();
 
         final TyphoonEntity entity = TyphoonEntity.INSTANCE;

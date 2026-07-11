@@ -26,10 +26,14 @@ public class TYPCommand {
                                             dataStorage = currentServer.getDataStorage();
                                             TyphoonEntity.INSTANCE = new TyphoonEntity(
                                                     CommonConfig.V.get()
+                                                    ,CommonConfig.DAMAGE.get()
                                                     ,CommonConfig.FACTOR.get()
                                                     ,CommonConfig.HEIGHT.get()
                                                     ,CommonConfig.MINY.get()
-                                                    ,CommonConfig.R.get(),true);
+                                                    ,CommonConfig.R.get(),true
+                                                    ,CommonConfig.H_FACTOR.get()
+                                                    ,CommonConfig.GROW.get()
+                                                    ,CommonConfig.MAX_GROWN.get());
 
                                             dataStorage.set(TyphoonEntity.ID,TyphoonEntity.INSTANCE);
                                         }
